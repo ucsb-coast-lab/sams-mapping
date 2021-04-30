@@ -1,0 +1,2 @@
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/SethVanB/Downloads/COAST_Lab/sams-mapping/target/debug/build/typenum-ab29f57557a70d1b/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/SethVanB/Downloads/COAST_Lab/sams-mapping/target/debug/build/typenum-ab29f57557a70d1b/out/op.rs
