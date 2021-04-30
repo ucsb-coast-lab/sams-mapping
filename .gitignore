@@ -12,3 +12,6 @@ Cargo.lock
 
 #Don't upload the data in the cvs files 
 *.csv
+
+#Mac DS_Store 
+.DS_Store
