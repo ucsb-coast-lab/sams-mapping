@@ -33,14 +33,7 @@
   </style>
 </head>
 <body>
-<label for="log_file">Choose a log file:</label>
-<select name="log_files" id="log_files" form="log_files_form">
-  <option value="2021-03-18-21-52-45_log.csv">2021-03-18-21-52-45_log.csv</option>
-  <option value="2021-03-18-22-20-36_log.csv">2021-03-18-22-20-36_log.csv</option>
-  <option value="2021-03-18-22-59-45_log.csv">2021-03-18-22-59-45_log.csv</option>
-  <option value="2021-03-18-23-09-50_log.csv">2021-03-18-23-09-50_log.csv</option>
-  <option value="2021-03-18-23-13-16_log.csv">2021-03-18-23-13-16_log.csv</option>
-</select>
+<input type="file" id="fileInput" name="cvs_upload" />
 <div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 10px;"></div>
 <div id="popup" class="ol-popup">
   <a href="#" id="popup-closer" class="ol-popup-closer"></a>
@@ -53,8 +46,24 @@
 </h2>
 
 <script>
-  const getText = async (fileName) => {    
-    return $.ajax({url: 'logs/' + fileName, dataType: 'text',})
+  document.getElementById('fileInput').addEventListener('change', readSingleFile);
+  var map;
+
+  function readSingleFile(evt) {
+    var f = evt.target.files[0]; 
+    if (f && f.type == "text/csv"){
+      var r = new FileReader();
+      r.onload = function(e) { 
+          var contents = e.target.result;
+          if(map){
+            map.setTarget(null);
+          }
+          createMap(contents);
+     }
+      r.readAsText(f);
+    } else { 
+      alert("Failed to load file, must be a cvs");
+    }
   }
 
   const getData = async (text) => {
@@ -86,8 +95,7 @@
       depth: depth, roll: roll, pitch: pitch, yaw: yaw}
   }
 
-  const createMap = async (fileName) => {
-    const text = await getText(fileName);
+  const createMap = async (text) => {
     const data = await getData(text);
 
     if(data.latitude.length != 0 && data.longitude.length != 0){
@@ -147,13 +155,10 @@
       });
       map.addLayer(line_layer);
 
-    
-
       function styleFunction(feature) {
         style.getText().setText(feature.get('label'));
         return style;
       }   
-
 
       var point_layer = new ol.layer.Vector({
         source: new ol.source.Vector({
@@ -175,61 +180,7 @@
         }
       });
       map.addOverlay(overlay);
-
-      //old code to make Leaflet Map
-      // var map = L.map('map').setView([lat, lon], 15);
-      // L.esri.basemapLayer('Topographic').addTo(map);
-
-      // var LeafIcon = L.Icon.extend({
-      //   options: {
-      //     iconSize:     [10, 10],
-      //     iconAnchor:   [15, 15],
-      //     popupAnchor:  [-7.5, -15]
-      //   }
-      // });
-      // var xIcon = new LeafIcon({
-      //   iconUrl: '../xIcon.png'
-      // })
-
-      // for(var i=0; i<data.latitude.length; i++){
-        // var point = L.marker([data.latitude[i], data.longitude[i]]).addTo(map);//.bindPopup("Pier: ").openPopup();
-        // point.bindPopup(
-        //   "ROSEpoch: " + data.ROSEpoch[i] +
-        //   "\nlatitude: "  + data.latitude[i] +
-        //   "\nlongitude: " + data.longitude[i] +
-        //   "\ndepth: " + data.depth[i] +
-        //   "\nroll: " + data.roll[i] +
-        //   "\npitch: " + data.pitch[i] +
-        //   "\nYaw: " + data.yaw[i]
-        // );
-        // point.setIcon(xIcon);
-      // }
-
-      // var popup = L.popup();
-      // function onMapClick(e) {
-      //   popup
-      //     .setLatLng(e.latlng)
-      //     .setContent(e.latlng.toString())
-      //     .openOn(map);
-      //   }
-      // map.on('click', onMapClick);
     }
-  }
-
-  var map;
-
-  var e = document.getElementById("log_files");
-  function show(){
-    var selected = e.options[e.selectedIndex].value;
-    map.setTarget(null);
-    createMap(selected)
-  }
-  e.onchange=show;
-
-  let set = false;
-  if(!set){
-    set = true;
-    createMap("2021-03-18-21-52-45_log.csv");
   }
 </script>
 
