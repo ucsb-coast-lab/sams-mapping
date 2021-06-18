@@ -34,16 +34,17 @@
 </head>
 <body>
 <input type="file" id="fileInput" name="cvs_upload" />
-<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 10px;"></div>
+<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 70px;"></div>
 <div id="popup" class="ol-popup">
   <a href="#" id="popup-closer" class="ol-popup-closer"></a>
   <div id="popup-content"></div>
 </div>
-<a href="../welcome.html"><img src="../coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
+<a href="https://ucsbcoastlab.org"><img src="../coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
 <font face="ubuntu">
 <h2>
     Log file data points:
 </h2>
+<a href="./geojson.html"><p>GeoJSON</p></a>
 
 <script>
   document.getElementById('fileInput').addEventListener('change', readSingleFile);
