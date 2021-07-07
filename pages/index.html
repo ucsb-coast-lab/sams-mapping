@@ -33,13 +33,13 @@
   </style>
 </head>
 <body>
+<a href="../welcome.html"><img src="../coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
 <input type="file" id="fileInput" name="cvs_upload" />
 <div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 10px;"></div>
 <div id="popup" class="ol-popup">
   <a href="#" id="popup-closer" class="ol-popup-closer"></a>
   <div id="popup-content"></div>
 </div>
-<a href="../welcome.html"><img src="../coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
 <font face="ubuntu">
 <h2>
     Log file data points:
@@ -59,10 +59,22 @@
             map.setTarget(null);
           }
           createMap(contents);
-     }
+      }
       r.readAsText(f);
-    } else { 
-      alert("Failed to load file, must be a cvs");
+    } 
+    else if (f){
+      var r = new FileReader();
+      r.onload = function(e) { 
+        var contents = e.target.result;
+        if(map){
+          map.setTarget(null);
+        }
+        createMap2(contents); 
+      }
+      r.readAsText(f);
+    }
+    else { 
+      alert("Failed to load file, must be a cvs or geojson");
     }
   }
 
@@ -93,6 +105,69 @@
 
     return {time: time, ROSEpoch: ROSEpoch, latitude: latitude, longitude: longitude, 
       depth: depth, roll: roll, pitch: pitch, yaw: yaw}
+  }
+
+  const createMap2 = async (text) => {
+    var allRows = text.split(/\r?\n|\r/);
+    var features = [];
+    allRows.map(row => {
+      try{
+        if(row !== ""){
+          row = JSON.parse(row);
+          row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
+          features.push(row);
+        }
+      }catch (e){
+        alert("Failed to load file, must be a cvs or geojson");
+      }
+    })
+
+    const geojson = {
+      'type': 'FeatureCollection',
+      'crs': {
+        'type': 'name',
+        'properties': {
+          'name': 'EPSG:3857',
+        },
+      },
+      'features': features,
+    };
+
+    map = new ol.Map({
+      target: 'map',
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.OSM()
+        })
+      ],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([-119.86, 34.4]),
+        zoom: 13
+      })
+    });
+
+    var styles = {
+      'Point': new ol.style.Style({
+        image: new ol.style.Circle({
+            radius: 3,
+            fill: new ol.style.Fill({color: 'red'}),
+          }),
+      }),  
+    };
+
+    var styleFunction = function (feature) {
+      return styles[feature.getGeometry().getType()];
+    };
+
+    var vectorSource = new ol.source.Vector({
+      features: new ol.format.GeoJSON().readFeatures(geojson),
+    });
+
+    var vectorLayer = new ol.layer.Vector({
+      source: vectorSource,
+      style: styleFunction,
+    });
+    map.addLayer(vectorLayer);
   }
 
   const createMap = async (text) => {
@@ -130,7 +205,7 @@
       })
 
       points = [];
-      lines = []
+      lines = [];
       for(var i=0; i<data.latitude.length; i++){
         point = new ol.Feature({label: parseFloat(data.yaw[i]).toFixed(2),
           geometry: new ol.geom.Point(ol.proj.fromLonLat([data.longitude[i], data.latitude[i]]))});
