@@ -75,7 +75,7 @@
       r.readAsText(f);
     }
     else { 
-      alert("Failed to load file, must be a cvs or geojson");
+      alert("Failed to load file");
     }
   }
 
@@ -109,19 +109,34 @@
   }
 
   const createMap2 = async (text) => {
-    var allRows = text.split(/\r?\n|\r/);
-    var features = [];
-    allRows.map(row => {
-      try{
-        if(row !== ""){
-          row = JSON.parse(row);
-          row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
-          features.push(row);
+    var latTotal = 0;
+    var lonTotal = 0;
+    try{      
+      json = JSON.parse(text);
+      features = json.features;
+      features.forEach(feature => {
+        feature.geometry.coordinates = ol.proj.fromLonLat([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+        latTotal += feature.geometry.coordinates[1];
+        lonTotal += feature.geometry.coordinates[0];
+      })
+    }catch(e){
+      //Handles old format where each line is a feature
+      var allRows = text.split(/\r?\n|\r/);
+      var features = [];
+      allRows.map(row => {
+        try{
+          if(row !== ""){
+            row = JSON.parse(row);
+            row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
+            latTotal += row.geometry.coordinates[1];
+            lonTotal += row.geometry.coordinates[0];
+            features.push(row);
+          }
+        }catch (e){
+          alert("Failed to load file, must be a cvs or geojson");
         }
-      }catch (e){
-        alert("Failed to load file, must be a cvs or geojson");
-      }
-    })
+      })
+    }
 
     const geojson = {
       'type': 'FeatureCollection',
@@ -142,7 +157,7 @@
         })
       ],
       view: new ol.View({
-        center: ol.proj.fromLonLat([-119.845293, 34.415898]),
+        center: [lonTotal/features.length, latTotal/features.length],
         zoom: 16
       })
     });
@@ -150,7 +165,7 @@
     var styles = {
       'Point': new ol.style.Style({
         image: new ol.style.Circle({
-            radius: 5,
+            radius: 2,
             fill: new ol.style.Fill({color: 'red'}),
           }),
       }),  
