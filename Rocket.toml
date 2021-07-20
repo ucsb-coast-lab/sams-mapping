@@ -1,0 +1,9 @@
+[global]
+workers = 2
+keep_alive = 5
+limits = { forms = 32768 }
+logging = "debug"
+
+[debug]
+address = "127.0.0.1"
+port = 8000
