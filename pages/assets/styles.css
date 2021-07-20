@@ -1,0 +1,34 @@
+html {
+    content: '';
+    position: relative;
+    margin: 1%;
+    min-height: 93.5%;
+    height: auto;
+}
+
+h2 {
+    color: black;
+    font-family: ubuntu;
+    font-size: 120%;
+}
+
+p {
+    color: black;
+    font-family: ubuntu;
+    font-size: 100%; 
+}
+ol::before{content: "•  "; color: black}
+ol {
+    margin: 5px;
+    list-style-type: circle;
+    font-family: ubuntu;
+    font-size: 100%;
+    color: black;
+}
+
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+  }
