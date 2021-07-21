@@ -15,8 +15,8 @@
   <!-- Load Math library -->
   <script src=https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js></script>
 
-    <!-- Load a set of helper functions-->
-    <script type="text/javascript" src="helper_fn.js"></script>
+  <!-- Load a set of map helper functions-->
+  <script type="text/javascript" src="./map_fn.js"></script>
 
   <style>
     body { margin:0; padding:0; }
@@ -37,8 +37,73 @@
 </h2>
 
 <script>
-  document.getElementById('fileInput').addEventListener('change', readSingleFile);
-  var map;
+  document.getElementById('fileInput').addEventListener('change', displayMap);
+  var map; 
+  function displayMap(evt) {
+    var f = evt.target.files[0]; 
+    if (f && f.type == "text/csv"){
+      var r = new FileReader();
+      r.onload = async function(e) { 
+          var text = e.target.result;
+          if(map){
+            map.setTarget(null);
+          }
+          const data = await getData(text);
+          if(data && data.latitude && data.longitude && data.latitude.length != 0 && data.longitude.length != 0){
+            let lat = (math.max(data.latitude) + math.min(data.latitude))/2.0;
+            let lon = (math.max(data.longitude) + math.min(data.longitude))/2.0;
+            map = createMap(18, ol.proj.fromLonLat([lon, lat]));
+
+            points = [];
+            lines = [];
+            for(var i=0; i<data.latitude.length; i++){
+              point = new ol.Feature({label: parseFloat(data.yaw[i]).toFixed(2),
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([data.longitude[i], data.latitude[i]])),
+              });
+              points.push(point);
+              if(i < data.latitude.length-1){
+                start = ol.proj.fromLonLat([data.longitude[i], data.latitude[i]]);
+                end = ol.proj.fromLonLat([data.longitude[i+1], data.latitude[i+1]])
+                lines.push(new ol.Feature({geometry: new ol.geom.LineString([start, end])}));
+              }
+            }
+
+            var point_style = new ol.style.Style({
+                image: new ol.style.Circle({
+                  radius: 3,
+                  fill: new ol.style.Fill({color: 'red'}),
+                }), 
+                text: new ol.style.Text({
+                      offsetY: 15,
+                      scale: 2,
+                      fill: new ol.style.Fill({
+                          color: '#black',
+                      })
+                })
+            })
+            function styleFunction(feature){
+              point_style.getText().setText(feature.get('label'));
+              return point_style;
+            } 
+            var point_layer = createLayer(points, styleFunction);
+            map.addLayer(point_layer);
+
+            line_style = new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                  color: 'orange',
+                  width: 1,
+                })
+              })
+            var line_layer = createLayer(lines, line_style);
+            map.addLayer(line_layer);
+          }
+      }
+      r.readAsText(f);
+    } 
+    else { 
+      alert("Failed to load file, must be a .csv");
+    }
+  }
 
   const getData = async (text) => {
     let time=[]
@@ -67,89 +132,6 @@
 
     return {time: time, ROSEpoch: ROSEpoch, latitude: latitude, longitude: longitude, 
       depth: depth, roll: roll, pitch: pitch, yaw: yaw}
-  }
-
-  const createMap = async (text) => {
-    const data = await getData(text);
-
-    if(data.latitude.length != 0 && data.longitude.length != 0){
-      let lat = (math.max(data.latitude) + math.min(data.latitude))/2.0;
-      let lon = (math.max(data.longitude) + math.min(data.longitude))/2.0;
-
-      map = new ol.Map({
-        target: 'map',
-        layers: [
-          new ol.layer.Tile({
-            source: new ol.source.OSM()
-          })
-        ],
-        view: new ol.View({
-          center: ol.proj.fromLonLat([lon, lat]),
-          zoom: 18
-        })
-      });
-
-      var style = new ol.style.Style({
-          image: new ol.style.Circle({
-            radius: 3,
-            fill: new ol.style.Fill({color: 'red'}),
-          }), 
-          text: new ol.style.Text({
-                offsetY: 15,
-                scale: 2,
-                fill: new ol.style.Fill({
-                    color: '#black',
-                })
-          })
-      })
-
-      points = [];
-      lines = [];
-      for(var i=0; i<data.latitude.length; i++){
-        point = new ol.Feature({label: parseFloat(data.yaw[i]).toFixed(2),
-          geometry: new ol.geom.Point(ol.proj.fromLonLat([data.longitude[i], data.latitude[i]]))});
-        points.push(point);
-        if(i < data.latitude.length-1){
-          start = ol.proj.fromLonLat([data.longitude[i], data.latitude[i]]);
-          end = ol.proj.fromLonLat([data.longitude[i+1], data.latitude[i+1]])
-          lines.push(new ol.Feature({geometry: new ol.geom.LineString([start, end])}));
-        }
-      }
-
-      var line_layer = new ol.layer.Vector({
-        source: new ol.source.Vector({
-            features: lines
-        }),
-        style: new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'orange',
-            width: 1,
-          })
-        })
-      });
-      map.addLayer(line_layer);
-
-      var point_layer = new ol.layer.Vector({
-        source: new ol.source.Vector({
-            features: points
-        }),
-        style: styleFunction
-      });
-      map.addLayer(point_layer);
-
-      var container = document.getElementById('popup');
-      var content = document.getElementById('popup-content');
-      var closer = document.getElementById('popup-closer');
-
-      var overlay = new ol.Overlay({
-        element: container,
-        autoPan: true,
-        autoPanAnimation: {
-            duration: 250
-        }
-      });
-      map.addOverlay(overlay);
-    }
   }
 </script>
 

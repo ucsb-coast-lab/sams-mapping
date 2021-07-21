@@ -15,6 +15,9 @@
   <!-- Load Math library -->
   <script src=https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js></script>
 
+  <!-- Load a set of map helper functions-->
+  <script type="text/javascript" src="map_fn.js"></script>
+
   <style>
     body { margin:0; padding:0; }
     #map { position: absolute; top:100; bottom:0; right:0; left:0; }
@@ -33,91 +36,74 @@
     MASV echosounder data:
 </h2>
 
-<!-- Load a set of helper functions-->
-<script type="text/javascript" src="helper_fn.js"></script>
-
 <script>
-  document.getElementById('fileInput').addEventListener('change', readSingleFile);
+  document.getElementById('fileInput').addEventListener('change', displayMap);
   var map;
-
-  const createMap2 = async (text) => {
-    var latTotal = 0;
-    var lonTotal = 0;
-    try{      
-      json = JSON.parse(text);
-      features = json.features;
-      features.forEach(feature => {
-        feature.geometry.coordinates = ol.proj.fromLonLat([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
-        latTotal += feature.geometry.coordinates[1];
-        lonTotal += feature.geometry.coordinates[0];
-      })
-    }catch(e){
-      //Handles old format where each line is a feature
-      var allRows = text.split(/\r?\n|\r/);
-      var features = [];
-      allRows.map(row => {
-        try{
-          if(row !== ""){
-            row = JSON.parse(row);
-            row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
-            latTotal += row.geometry.coordinates[1];
-            lonTotal += row.geometry.coordinates[0];
-            features.push(row);
-          }
-        }catch (e){
-          alert("Failed to load file, must be a .csv or .geojson");
+  function displayMap(evt) {
+    var f = evt.target.files[0]; 
+    if(f){
+      var r = new FileReader();
+      r.onload = function(e) { 
+        var text = e.target.result;
+        if(map){
+          map.setTarget(null);
         }
-      })
+        var latTotal = 0;
+        var lonTotal = 0;
+        try{      
+          json = JSON.parse(text);
+          features = json.features;
+          features.forEach(feature => {
+            feature.geometry.coordinates = ol.proj.fromLonLat([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+            latTotal += feature.geometry.coordinates[1];
+            lonTotal += feature.geometry.coordinates[0];
+          })
+        }catch(e){
+          //Handles old format where each line is a feature
+          var allRows = text.split(/\r?\n|\r/);
+          var features = [];
+          allRows.map(row => {
+            try{
+              if(row !== ""){
+                row = JSON.parse(row);
+                row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
+                latTotal += row.geometry.coordinates[1];
+                lonTotal += row.geometry.coordinates[0];
+                features.push(row);
+              }
+            }catch (e){
+              alert("Failed to load file, must be a .csv or .geojson");
+            }
+          })
+        }
+
+        const geojson = {
+          'type': 'FeatureCollection',
+          'features': features,
+        };
+
+        map = createMap(16, [lonTotal/features.length, latTotal/features.length]);
+
+        var point_style = {
+          'Point': new ol.style.Style({
+            image: new ol.style.Circle({
+                radius: 2,
+                fill: new ol.style.Fill({color: 'red'}),
+              }),
+          }),  
+        };
+        function styleFunction (feature) {
+          return point_style[feature.getGeometry().getType()];
+        };
+        var point_layer = createLayer(new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
+        map.addLayer(point_layer);
+      }
+      r.readAsText(f);
     }
-
-    const geojson = {
-      'type': 'FeatureCollection',
-      'crs': {
-        'type': 'name',
-        'properties': {
-          'name': 'EPSG:3857',
-        },
-      },
-      'features': features,
-    };
-
-    map = new ol.Map({
-      target: 'map',
-      layers: [
-        new ol.layer.Tile({
-          source: new ol.source.OSM()
-        })
-      ],
-      view: new ol.View({
-        center: [lonTotal/features.length, latTotal/features.length],
-        zoom: 16
-      })
-    });
-
-    var styles = {
-      'Point': new ol.style.Style({
-        image: new ol.style.Circle({
-            radius: 2,
-            fill: new ol.style.Fill({color: 'red'}),
-          }),
-      }),  
-    };
-
-    var styleFunction = function (feature) {
-      return styles[feature.getGeometry().getType()];
-    };
-
-    var vectorSource = new ol.source.Vector({
-      features: new ol.format.GeoJSON().readFeatures(geojson),
-    });
-
-    var vectorLayer = new ol.layer.Vector({
-      source: vectorSource,
-      style: styleFunction,
-    });
-    map.addLayer(vectorLayer);
+    else { 
+      alert("Failed to load file");
+    }
   }
-
 </script>
 
 </body>
