@@ -22,15 +22,27 @@
   <script src="rainbowvis.js"></script>
 
   <style>
-    body { margin:0; padding:0; }
+    body { margin:0; padding: 0; }
     #map { position: absolute; top:100; bottom:0; right:0; left:0; }
   </style>
 </head>
 <body>
 <a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
-<p>Please select a data file for processing:</p>
-<input type="file" id="fileInput" name="csv_upload" />
-<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 70px;"></div>
+<div>Please select a .geojson file for processing:</div>
+<div>
+  <span><input type="file" id="fileInput" name="geojson_upload" /></span>
+  <span id="min">Min: </span>
+  <span id="max">Max: </span>
+  <span id="mean">Mean: </span>
+</div>
+<div>Please select a second .geojson file for processing:</div>
+<div>
+  <span><input type="file" id="fileInput2" name="geojson_upload" /></span>
+  <span id="min2">Min: </span>
+  <span id="max2">Max: </span>
+  <span id="mean2">Mean: </span>
+</div>
+<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 50px;"></div>
 <div id="popup" class="ol-popup">
   <a href="#" id="popup-closer" class="ol-popup-closer"></a>
   <div id="popup-content"></div>
@@ -40,17 +52,20 @@
 </h2>
 
 <script>
-  document.getElementById('fileInput').addEventListener('change', displayMap);
-  var map;
-  function displayMap(evt) {
+  document.getElementById('fileInput').addEventListener('change', addInitData);
+  document.getElementById('fileInput2').addEventListener('change', addCompData);
+  var map = createMap(2, [0,0]);
+  function addInitData(evt) {
     var f = evt.target.files[0]; 
     if(f){
       var r = new FileReader();
       r.onload = function(e) { 
         var text = e.target.result;
-        if(map){
-          map.setTarget(null);
-        }
+        map.getLayers().forEach(layer => {
+          if (layer !== basemap) {
+            map.removeLayer(layer);
+          }
+        });
         var latTotal = 0;
         var lonTotal = 0;
         var depths = [];
@@ -78,39 +93,128 @@
                 features.push(row);
               }
             }catch (e){
-              alert("Failed to load file, must be a .csv or .geojson");
+              alert("Failed to load file, must be a .geojson");
             }
           })
         }
 
-        var numberOfItems = (math.max(depths) - math.min(depths));
-        var rainbow = new Rainbow(); 
-        rainbow.setNumberRange(1, numberOfItems);
-        rainbow.setSpectrum('red', 'darkred');
-        var gradient = [];
-        for (var i = 1; i <= numberOfItems; i++) {
-            var hexColour = rainbow.colourAt(i);
-            gradient.push('#' + hexColour);
-        }
-        features.forEach(feature => {
-          feature.properties.color = gradient[feature.properties.depth - math.min(depths)];
-        });
+        document.getElementById('min').innerHTML= "Min: " + Math.min(...depths);
+        document.getElementById('max').innerHTML= "Max: " + Math.max(...depths);
+        document.getElementById('mean').innerHTML= "Mean: " + depths.reduce((a, b) => parseInt(a) + parseInt(b), 0) / depths.length;
+
+        addMinMaxGradient('blue', 'orange', features, depths);
 
         const geojson = {
           'type': 'FeatureCollection',
           'features': features,
         };
 
-        map = createMap(16, [lonTotal/features.length, latTotal/features.length]);
+        map.getView().setCenter([lonTotal/features.length, latTotal/features.length]);
+        map.getView().setZoom(16);
 
         function styleFunction (feature) {
           let color = feature.get("color");
+          let text = feature.get("label")
+          if(text !== undefined){
+            color = "yellow"
+          }
           var point_style = {
             'Point': new ol.style.Style({
               image: new ol.style.Circle({
-                  radius: 2,
-                  fill: new ol.style.Fill({color: color}),
-                }),
+                radius: 2,
+                fill: new ol.style.Fill({color: color}),
+              }),
+              text: new ol.style.Text({
+                text: text,
+                offsetY: -10,
+                scale: 1,
+                fill: new ol.style.Fill({
+                    color: 'yellow',
+                })
+              })
+            }),  
+          };
+          return point_style[feature.getGeometry().getType()];
+        };
+        var point_layer = createLayer(new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
+        map.addLayer(point_layer);
+      }
+      r.readAsText(f);
+    }
+    else { 
+      alert("Failed to load file");
+    }
+  }
+
+  function addCompData(evt) {
+    var f = evt.target.files[0]; 
+    if(f){
+      var r = new FileReader();
+      r.onload = function(e) { 
+        var text = e.target.result;
+        var latTotal = 0;
+        var lonTotal = 0;
+        var depths = [];
+        try{      
+          json = JSON.parse(text);
+          features = json.features;
+          features.forEach(feature => {
+            feature.geometry.coordinates = ol.proj.fromLonLat([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+            latTotal += feature.geometry.coordinates[1];
+            lonTotal += feature.geometry.coordinates[0];
+            depths.push(feature.properties.depth);
+          })
+        }catch(e){
+          //Handles old format where each line is a feature
+          var allRows = text.split(/\r?\n|\r/);
+          var features = [];
+          allRows.map(row => {
+            try{
+              if(row !== ""){
+                row = JSON.parse(row);
+                row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
+                latTotal += row.geometry.coordinates[1];
+                lonTotal += row.geometry.coordinates[0];
+                depths.push(row.properties.depth);
+                features.push(row);
+              }
+            }catch (e){
+              alert("Failed to load file, must be a .geojson");
+            }
+          })
+        }
+
+        document.getElementById('min2').innerHTML= "Min: " + Math.min(...depths);
+        document.getElementById('max2').innerHTML= "Max: " + Math.max(...depths);
+        document.getElementById('mean2').innerHTML= "Mean: " + depths.reduce((a, b) => parseInt(a) + parseInt(b), 0) / depths.length;
+
+        addMinMaxGradient('red', 'green', features, depths);
+
+        const geojson = {
+          'type': 'FeatureCollection',
+          'features': features,
+        };
+
+        function styleFunction (feature) {
+          let color = feature.get("color");
+          let text = feature.get("label");
+          if(text !== undefined){
+            color = "purple"
+          }
+          var point_style = {
+            'Point': new ol.style.Style({
+              image: new ol.style.Circle({
+                radius: 2,
+                fill: new ol.style.Fill({color: color}),
+              }),
+              text: new ol.style.Text({
+                text: text,
+                offsetY: 10,
+                scale: 1,
+                fill: new ol.style.Fill({
+                    color: 'purple',
+                })
+              })
             }),  
           };
           return point_style[feature.getGeometry().getType()];
