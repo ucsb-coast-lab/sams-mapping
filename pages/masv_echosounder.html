@@ -31,6 +31,11 @@
 <div>Please select a .geojson file for processing:</div>
 <div>
   <span><input type="file" id="fileInput" name="geojson_upload" /></span>
+  <span>Feature: </span>
+  <span>
+    <select name="features" id="featureSelect">
+    </select>
+  </span>
   <span id="min">Min: </span>
   <span id="max">Max: </span>
   <span id="mean">Mean: </span>
@@ -38,11 +43,16 @@
 <div>Please select a second .geojson file for processing:</div>
 <div>
   <span><input type="file" id="fileInput2" name="geojson_upload" /></span>
+  <span>Feature: </span>
+  <span>
+    <select name="features" id="featureSelect2">
+    </select>
+  </span>
   <span id="min2">Min: </span>
   <span id="max2">Max: </span>
   <span id="mean2">Mean: </span>
 </div>
-<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 50px;"></div>
+<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 80px;"></div>
 <div id="popup" class="ol-popup">
   <a href="#" id="popup-closer" class="ol-popup-closer"></a>
   <div id="popup-content"></div>
@@ -96,6 +106,13 @@
               alert("Failed to load file, must be a .geojson");
             }
           })
+        }
+
+        var selector = document.getElementById("featureSelect");
+        for(x in features[0].properties){
+          var option = document.createElement("option");
+          option.text = x;
+          selector.add(option);
         }
 
         document.getElementById('min').innerHTML= "Min: " + Math.min(...depths);
@@ -182,6 +199,13 @@
               alert("Failed to load file, must be a .geojson");
             }
           })
+        }
+
+        var selector = document.getElementById("featureSelect2");
+        for(x in features[0].properties){
+          var option = document.createElement("option");
+          option.text = x;
+          selector.add(option);
         }
 
         document.getElementById('min2').innerHTML= "Min: " + Math.min(...depths);
