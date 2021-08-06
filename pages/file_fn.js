@@ -50,7 +50,7 @@ function changeGradientOrFeature(name, colors, newFeature, minMaxColor){
             break;
         }else if(parseInt(i) === mainFeatures.length-1){
             mainFeatures.push(mainFeatures[0]-2);
-            alert("All points have the same value for " + newFeature);
+            alert("All points have the same value for " + newFeature + "\n Min value being displayed is incorrect");
         }
       }
       //work around to format time and confidence features 

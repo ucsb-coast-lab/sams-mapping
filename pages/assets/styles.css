@@ -32,3 +32,9 @@ ol {
     margin-right: auto;
     width: 50%;
   }
+
+.map{
+    width: 1100px; 
+    height: 600px; 
+    margin-top: 150px;
+}

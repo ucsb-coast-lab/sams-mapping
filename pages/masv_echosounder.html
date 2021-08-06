@@ -23,18 +23,11 @@
 
   <!-- Load rainbowvis.js file  -->
   <script src="rainbowvis.js"></script>
-
-  <style>
-    body { margin:0; padding: 0; }
-    #map { position: absolute; top:100; bottom:0; right:0; left:0; }
-  </style>
 </head>
 <body>
 <a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
 <div>Please select a .geojson file for processing:</div>
-<div>
-  <span><input type="file" id="fileInput" name="geojson_upload" /></span>
-</div>
+<input type="file" id="fileInput" name="geojson_upload"/>
 <table id="inputTable">
   <tr>
     <th>Delete</th>
@@ -48,11 +41,7 @@
     <th>Mean</th>
   </tr>
 </table>
-<div id="map" class="map" style="width: 1100px; height: 600px; margin-top: 150px;"></div>
-<div id="popup" class="ol-popup">
-  <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-  <div id="popup-content"></div>
-</div>
+<div id="map" class="map"></div>
 <h2>
     MASV echosounder data:
 </h2>
@@ -108,7 +97,7 @@
             break;
           }else if(parseInt(i) === mainFeatures.length-1){
             mainFeatures.push(mainFeatures[0]-2);
-            alert("All points have the same value for " + mainFeature);
+            alert("All points have the same value for " + mainFeature + "\n Min value being displayed is incorrect");
           }
         }
         //work around to format time feature
