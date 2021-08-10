@@ -2,13 +2,13 @@ function deleteFile(name){
     map.getLayers().getArray()
         .filter(layer => layer.get('name') === name)
         .forEach(layer => map.removeLayer(layer))
-    var row = document.getElementById(name);
-    row.parentNode.removeChild(row);
+    var file = document.getElementById(name);
+    file.parentNode.removeChild(file);
 }
 
 function hideFile(name){
-    var row = document.getElementById(name);
-    var radio = row.cells[1].childNodes[0];
+    var file = document.getElementById(name);
+    var radio = file.childNodes[2];
     if (radio.getAttribute("checked") === "checked")
     {
         radio.setAttribute("checked", "unchecked");
@@ -50,7 +50,7 @@ function changeGradientOrFeature(name, colors, newFeature, minMaxColor){
             break;
         }else if(parseInt(i) === mainFeatures.length-1){
             mainFeatures.push(mainFeatures[0]-2);
-            alert("All points have the same value for " + newFeature + "\n Min value being displayed is incorrect");
+            alert("All points have the same value for " + newFeature + "\nMin value being displayed is incorrect");
         }
       }
       //work around to format time and confidence features 
@@ -84,10 +84,10 @@ function changeGradientOrFeature(name, colors, newFeature, minMaxColor){
         feats[f].set("color", features[f].properties.color);
         feats[f].set("label", features[f].properties.label);
       }
-      var row = document.getElementById(name);
-      row.cells[5].innerHTML = Math.min(...mainFeatures);
-      row.cells[6].innerHTML = Math.max(...mainFeatures);
-      row.cells[8].innerHTML = Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length);
+      var file = document.getElementById(name);
+      file.childNodes[12].innerHTML = "Min: " + Math.min(...mainFeatures);
+      file.childNodes[13].innerHTML = "Max: " + Math.max(...mainFeatures);
+      file.childNodes[14].innerHTML = "Mean: " + Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length);
     }
 }
 
@@ -118,62 +118,95 @@ function changeMinMaxColor(name, color){
                 }),
               )
           }
-        })
-
+        });
     }
 }
 
 function addFileRow(inputName, features, mainFeatures){
-    var table = document.getElementById("inputTable");
-        var row = table.insertRow();
-        row.setAttribute("id", inputName);
-        var remove = row.insertCell(0);
-        var hide = row.insertCell(1)
-        var fileName = row.insertCell(2);
-        var featureSelector = row.insertCell(3);
-        var gradientSelector = row.insertCell(4);
-        var min = row.insertCell(5);
-        var max = row.insertCell(6);
-        var minMaxColorSelector = row.insertCell(7);
-        var mean = row.insertCell(8);
-        hideButton = document.createElement("input");
-        hideButton.setAttribute("type", "checkbox");
-        hideButton.setAttribute("checked", "checked");
-        hideButton.onclick = function() {hideFile(inputName)};
-        hide.appendChild(hideButton);
-        deleteButton = document.createElement("button");
-        deleteButton.innerHTML = " X ";
-        deleteButton.onclick = function() {deleteFile(inputName)};
-        remove.appendChild(deleteButton);
-        fileName.innerHTML = inputName;
-        var fselector = document.createElement("select");
-        for(x in features[0].properties){
-          var option = document.createElement("option");
-          option.text = x;
-          fselector.add(option);
-        }
-        fselector.onchange = function() {changeGradientOrFeature(inputName, gselector.value, fselector.value, minMaxSelector.value)}
-        featureSelector.appendChild(fselector);
-        var gselector = document.createElement("select");
-        var gradientColors = ["blue,orange", "red,green", "yellow,indigo", "red,blue", "purple,green", "lightsteelblue,darkblue", "lightpink,darkred", "palegreen,darkgreen", "plum,indigo"];
-        for(x in gradientColors){
-          var option = document.createElement("option");
-          option.text = gradientColors[x];
-          gselector.add(option);
-        }
-        gselector.selectedIndex = row.rowIndex;
-        gselector.onchange = function() {changeGradientOrFeature(inputName, gselector.value, fselector.value, minMaxSelector.value)}
-        gradientSelector.appendChild(gselector);
-        min.innerHTML = Math.min(...mainFeatures);
-        max.innerHTML = Math.max(...mainFeatures);
-        var minMaxColors = ["white", "black", "red", "green", "blue", "orange", "purple", "yellow"];
-        var minMaxSelector = document.createElement("select");
-        for(x in minMaxColors){
-          var option = document.createElement("option");
-          option.text = minMaxColors[x];
-          minMaxSelector.add(option);
-        }
-        minMaxSelector.onchange = function() {changeMinMaxColor(inputName, minMaxSelector.value)}
-        minMaxColorSelector.appendChild(minMaxSelector);
-        mean.innerHTML = Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length);
+    var dataColumn = document.getElementById("dataColumn");
+    var newDataFile = document.createElement("div");
+    newDataFile.setAttribute("id", inputName);
+    newDataFile.setAttribute("class", "dataFile");
+
+    var fileName = document.createElement("h4");
+    let displayName = inputName;
+    if(displayName.length > 25){
+        displayName = inputName.substring(0, 14) + "..." + inputName.substring(inputName.length - 14);
+    }
+    fileName.innerHTML = displayName;
+    newDataFile.appendChild(fileName);
+
+    var hideLabel = document.createElement("label");
+    hideLabel.innerHTML = "Hide: ";
+    newDataFile.appendChild(hideLabel);
+    var hideButton = document.createElement("input");
+    hideButton.setAttribute("type", "checkbox");
+    hideButton.setAttribute("checked", "checked");
+    hideButton.onclick = function() {hideFile(inputName)};
+    newDataFile.appendChild(hideButton);
+
+    var deleteLabel = document.createElement("label");
+    deleteLabel.innerHTML = "Delete: ";
+    newDataFile.appendChild(deleteLabel);
+    var deleteButton = document.createElement("button");
+    deleteButton.innerHTML = " X ";
+    deleteButton.onclick = function() {deleteFile(inputName)};
+    newDataFile.appendChild(deleteButton);
+
+
+    var featureLabel = document.createElement("label");
+    featureLabel.innerHTML = "Features: ";
+    newDataFile.appendChild(featureLabel);
+    var featureSelector = document.createElement("select");
+    for(x in features[0].properties){
+        var option = document.createElement("option");
+        option.text = x;
+        featureSelector.add(option);
+    }
+    featureSelector.onchange = function() {changeGradientOrFeature(inputName, gradientSelector.value, featureSelector.value, minMaxSelector.value)}
+    newDataFile.appendChild(featureSelector);
+
+    var gradientLabel = document.createElement("label");
+    gradientLabel.innerHTML = "Data Color Gradient: ";
+    newDataFile.appendChild(gradientLabel);
+    var gradientSelector = document.createElement("select");
+    var gradientColors = ["blue,orange", "red,green", "yellow,indigo", "red,blue", "purple,green", "lightsteelblue,darkblue", "lightpink,darkred", "palegreen,darkgreen", "plum,indigo"];
+    for(x in gradientColors){
+        var option = document.createElement("option");
+        option.text = gradientColors[x];
+        gradientSelector.add(option);
+    }
+    gradientSelector.selectedIndex = dataColumn.childNodes.length;
+    gradientSelector.onchange = function() {changeGradientOrFeature(inputName, gradientSelector.value, featureSelector.value, minMaxSelector.value)}
+    newDataFile.appendChild(gradientSelector);
+
+    var minMaxColorLabel = document.createElement("label");
+    minMaxColorLabel.innerHTML = "Min Max Color: ";
+    newDataFile.appendChild(minMaxColorLabel);
+    var minMaxColors = ["white", "black", "red", "green", "blue", "orange", "purple", "yellow"];
+    var minMaxSelector = document.createElement("select");
+    for(x in minMaxColors){
+        var option = document.createElement("option");
+        option.text = minMaxColors[x];
+        minMaxSelector.add(option);
+    }
+    minMaxSelector.onchange = function() {changeMinMaxColor(inputName, minMaxSelector.value)}
+    newDataFile.appendChild(minMaxSelector);
+
+    var lineBreak = document.createElement("br");
+    newDataFile.appendChild(lineBreak);
+    var min = document.createElement("p");
+    min.innerHTML = "Min: " + Math.min(...mainFeatures);
+    newDataFile.appendChild(min);
+
+    var max = document.createElement("p");
+    max.innerHTML = "Max: " + Math.max(...mainFeatures);
+    newDataFile.appendChild(max);
+
+    var mean = document.createElement("p");
+    mean.innerHTML = "Mean: " + Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length);
+    newDataFile.appendChild(mean);
+
+    var dataColumn = document.getElementById("dataColumn");
+    dataColumn.appendChild(newDataFile);
 }

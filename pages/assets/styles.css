@@ -1,10 +1,9 @@
 html {
-    content: '';
-    position: relative;
-    margin: 1%;
-    min-height: 93.5%;
-    height: auto;
+    overflow: hidden;
 }
+
+/* css for bullet pionts on index.html */
+ol::before{content: "•  "; color: black}
 
 h2 {
     color: black;
@@ -12,29 +11,67 @@ h2 {
     font-size: 120%;
 }
 
-p {
-    color: black;
-    font-family: ubuntu;
-    font-size: 100%; 
-}
-ol::before{content: "•  "; color: black}
-ol {
-    margin: 5px;
-    list-style-type: circle;
-    font-family: ubuntu;
-    font-size: 100%;
-    color: black;
+body{
+    position: fixed; 
+    width: 100%; 
+    height: 100%; 
+    margin: 0px; 
+    display: inline-flex; 
+    flex-direction: row;
 }
 
-.center {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 50%;
-  }
+.leftColumn{
+    width: 300px; 
+    margin: 5px; 
+    overflow-y: auto;
+}
+
+.columnHeader{
+    position: fixed; 
+    background-color: white;
+}
+
+.dataColumn{
+    margin-top: 150px;
+}
+
+/* styling for added data file rows */
+.dataFile{
+    width: 290px;
+    border-bottom: 1px solid grey;
+    border-top: 1px solid grey;
+    padding: 0px;
+}
+.dataFile > button{
+    background-color: red;
+    border: 1px solid grey;
+    margin: 5px;
+}
+.dataFile > input{
+    background-color: red;
+    border: 1px solid grey;
+    margin: 5px;
+}
+.dataFile > p{
+    margin-right: 10px;
+    display: inline;
+}
+.dataFile > label{
+    white-space: pre;
+}
+.dataFile > h4{
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    font-size: 18px;
+    width: 290px;
+}
 
 .map{
-    width: 1100px; 
-    height: 600px; 
-    margin-top: 150px;
+    position: absolute; 
+    left:300px; 
+    right:0px;
+    top: 0px;
+    bottom: 0px;
+    margin: 5px;
 }
