@@ -1,5 +1,6 @@
 html {
     overflow: hidden;
+    font-family: sans-serif;
 }
 
 /* css for bullet pionts on index.html */
@@ -7,7 +8,6 @@ ol::before{content: "•  "; color: black}
 
 h2 {
     color: black;
-    font-family: ubuntu;
     font-size: 120%;
 }
 
@@ -21,7 +21,7 @@ body{
 }
 
 .leftColumn{
-    width: 300px; 
+    width: 310px; 
     margin: 5px; 
     overflow-y: auto;
 }
@@ -37,7 +37,7 @@ body{
 
 /* styling for added data file rows */
 .dataFile{
-    width: 290px;
+    width: 300px;
     border-bottom: 1px solid grey;
     border-top: 1px solid grey;
     padding: 0px;
@@ -63,13 +63,14 @@ body{
     text-align: center;
     margin-top: 5px;
     margin-bottom: 5px;
-    font-size: 18px;
-    width: 290px;
+    font-size: 16px;
+    width: 300px;
+    overflow-wrap: break-word;
 }
 
 .map{
     position: absolute; 
-    left:300px; 
+    left:310px; 
     right:0px;
     top: 0px;
     bottom: 0px;

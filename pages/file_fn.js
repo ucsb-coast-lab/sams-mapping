@@ -88,6 +88,12 @@ function changeGradientOrFeature(name, colors, newFeature, minMaxColor){
       file.childNodes[12].innerHTML = "Min: " + Math.min(...mainFeatures);
       file.childNodes[13].innerHTML = "Max: " + Math.max(...mainFeatures);
       file.childNodes[14].innerHTML = "Mean: " + Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length);
+      if(newFeature === "time"){
+        var ampm = (new Date(Math.min(...mainFeatures)).toLocaleTimeString()).substring(9,11);
+        file.childNodes[12].innerHTML = "Min: " + (new Date(Math.min(...mainFeatures)).toLocaleTimeString()).substring(0,5);
+        file.childNodes[13].innerHTML = "Max: " + (new Date(Math.max(...mainFeatures)).toLocaleTimeString()).substring(0,5);
+        file.childNodes[14].innerHTML = "Mean: " + (new Date(Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length)).toLocaleTimeString()).substring(0,5);
+      }
     }
 }
 
@@ -130,9 +136,9 @@ function addFileRow(inputName, features, mainFeatures){
 
     var fileName = document.createElement("h4");
     let displayName = inputName;
-    if(displayName.length > 25){
-        displayName = inputName.substring(0, 14) + "..." + inputName.substring(inputName.length - 14);
-    }
+    // if(displayName.length > 25){
+    //   displayName = inputName.substring(0, 20) + "..." + inputName.substring(inputName.length - 4);
+    // }
     fileName.innerHTML = displayName;
     newDataFile.appendChild(fileName);
 
@@ -209,4 +215,11 @@ function addFileRow(inputName, features, mainFeatures){
 
     var dataColumn = document.getElementById("dataColumn");
     dataColumn.appendChild(newDataFile);
+
+    if(featureSelector.value === "time"){
+      var ampm = (new Date(Math.min(...mainFeatures)).toLocaleTimeString()).substring(9,11);
+      min.innerHTML = "Min: " + (new Date(Math.min(...mainFeatures)).toLocaleTimeString()).substring(0,5);
+      max.innerHTML = "Max: " + (new Date(Math.max(...mainFeatures)).toLocaleTimeString()).substring(0,5);
+      mean.innerHTML = "Mean: " + (new Date(Math.round(mainFeatures.reduce((a, b) => parseInt(a) + parseInt(b), 0) / mainFeatures.length)).toLocaleTimeString()).substring(0,5);
+    }
 }
