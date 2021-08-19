@@ -1,7 +1,7 @@
 // const basemap = new ol.layer.Tile({
 //   source: new ol.source.OSM({
-//           url: 'maps/map.osm'
-//           //url: 'maps/{z}/{x}/{y}.png'
+//     url: 'maps/map_3.png'
+//     //url: 'maps/{z}/{x}/{y}.png'
 //   })
 // });
 const basemap = new ol.layer.Tile({ source: new ol.source.OSM() })

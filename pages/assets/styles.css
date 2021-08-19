@@ -3,6 +3,10 @@ html {
     font-family: sans-serif;
 }
 
+img {
+    width: 300px;
+}
+
 /* css for bullet pionts on index.html */
 ol::before{content: "•  "; color: black}
 
