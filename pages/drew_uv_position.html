@@ -53,7 +53,6 @@
             map.getLayers().getArray()
               .filter(layer => layer !== basemap)
               .forEach(layer => map.removeLayer(layer))
-
             let lat = (math.max(data.latitude) + math.min(data.latitude))/2.0;
             let lon = (math.max(data.longitude) + math.min(data.longitude))/2.0;
             map.getView().setCenter(ol.proj.fromLonLat([lon, lat]));
