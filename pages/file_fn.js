@@ -135,11 +135,7 @@ function addFileRow(inputName, features, mainFeatures){
     newDataFile.setAttribute("class", "dataFile");
 
     var fileName = document.createElement("h4");
-    let displayName = inputName;
-    // if(displayName.length > 25){
-    //   displayName = inputName.substring(0, 20) + "..." + inputName.substring(inputName.length - 4);
-    // }
-    fileName.innerHTML = displayName;
+    fileName.innerHTML = inputName;
     newDataFile.appendChild(fileName);
 
     var hideLabel = document.createElement("label");
