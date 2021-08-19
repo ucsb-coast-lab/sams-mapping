@@ -19,40 +19,50 @@
   <script type="text/javascript" src="./map_fn.js"></script>
 
   <style>
-    #map { position: absolute; top:120;}
+    #map { position: absolute; top:170; left:0; bottom:0; right:0;}
     body {display: block;}
+    img {width:300px; height:50 px;}
   </style>
 </head>
 <body>
-<a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
+<a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo"></a>
 <p>Please select a .csv file for processing:</p>
 <input type="file" id="fileInput" name="csv_upload" />
 <h2>
     DrewUV Position Data:
 </h2>
-<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 70px;"></div>
+<div id="map" class="map"></div>
+<div id="popup" class="ol-popup">
+  <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+  <div id="popup-content"></div>
+</div>
 
 <script>
-  document.getElementById('fileInput').addEventListener('change', displayMap);
-  var map; 
-  function displayMap(evt) {
+  document.getElementById('fileInput').addEventListener('change', setMap);
+  var map = createMap(2, [0,0]);
+  addPopupImages(map);
+
+  function setMap(evt) {
     var f = evt.target.files[0]; 
     if (f && f.type == "text/csv"){
       var r = new FileReader();
       r.onload = async function(e) { 
           var text = e.target.result;
-          if(map){
-            map.setTarget(null);
-          }
           const data = await getData(text);
           if(data && data.latitude && data.longitude && data.latitude.length != 0 && data.longitude.length != 0){
+            map.getLayers().getArray()
+              .filter(layer => layer !== basemap)
+              .forEach(layer => map.removeLayer(layer))
+
             let lat = (math.max(data.latitude) + math.min(data.latitude))/2.0;
             let lon = (math.max(data.longitude) + math.min(data.longitude))/2.0;
-            map = createMap(18, ol.proj.fromLonLat([lon, lat]));
+            map.getView().setCenter(ol.proj.fromLonLat([lon, lat]));
+            map.getView().setZoom(18);
 
             points = [];
             lines = [];
             for(var i=0; i<data.latitude.length; i++){
+              //Change the label below to be any feature in the data set
               point = new ol.Feature({label: parseFloat(data.yaw[i]).toFixed(2),
                 geometry: new ol.geom.Point(ol.proj.fromLonLat([data.longitude[i], data.latitude[i]])),
               });
@@ -63,6 +73,15 @@
                 lines.push(new ol.Feature({geometry: new ol.geom.LineString([start, end])}));
               }
             }
+
+            line_style = new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                  color: 'orange',
+                  width: 1,
+                })
+              })
+            var line_layer = createLayer(f.name, lines, line_style);
+            map.addLayer(line_layer);
 
             var point_style = new ol.style.Style({
                 image: new ol.style.Circle({
@@ -83,15 +102,6 @@
             } 
             var point_layer = createLayer(f.name, points, styleFunction);
             map.addLayer(point_layer);
-
-            line_style = new ol.style.Style({
-                stroke: new ol.style.Stroke({
-                  color: 'orange',
-                  width: 1,
-                })
-              })
-            var line_layer = createLayer(f.name, lines, line_style);
-            map.addLayer(line_layer);
           }
       }
       r.readAsText(f);

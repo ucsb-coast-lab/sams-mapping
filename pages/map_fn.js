@@ -1,9 +1,3 @@
-// const basemap = new ol.layer.Tile({
-//   source: new ol.source.OSM({
-//           url: 'maps/map.osm'
-//           //url: 'maps/{z}/{x}/{y}.png'
-//   })
-// });
 const basemap = new ol.layer.Tile({ source: new ol.source.OSM() })
 
 function createMap(zoom, center){
@@ -55,6 +49,41 @@ function addMinMaxGradient(color1, color2, features, mainFeatures, mainFeature){
         feature.properties.label = "Max: " + feature.properties[mainFeature];
       }
       feature.properties.color = gradient[feature.properties[mainFeature] - math.min(mainFeatures) - 1];
+    }
+  });
+}
+
+function addPopupImages(map){
+  var container = document.getElementById('popup');
+  var content = document.getElementById('popup-content');
+  var closer = document.getElementById('popup-closer');
+
+  closer.onclick = function () {
+    overlay.setPosition(undefined);
+    closer.blur();
+    return false;
+  };
+
+  var overlay = new ol.Overlay({
+    element: container,
+    autoPan: true,
+    autoPanAnimation: {
+        duration: 250
+    }
+  });
+  map.addOverlay(overlay);
+
+  map.on('singleclick', function (evt) {
+    var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
+      return feature;
+    });
+    if (feature && feature.getGeometry().getType() === "Point") {
+      //Code to set popup images should be added here
+      const text = feature.get('label');
+      content.innerHTML = '<p>Image goes here:</p><code>' + text + '</code>';
+      
+      const coordinate = evt.coordinate;
+      overlay.setPosition(coordinate);
     }
   });
 }
