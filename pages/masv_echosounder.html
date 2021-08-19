@@ -49,19 +49,20 @@
 
   function addFile(evt) {
     var f = evt.target.files[0]; 
-    var inputName = f.name;
-    let max = 0;
-    duplicateInputs = map.getLayers().getArray()
-      .filter(layer => layer.get('name')?.substring(0, inputName.length) === inputName);
-    if(duplicateInputs.length > 0){
-      duplicateInputs.forEach(i => {
-        if(parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")"))) > max){
-          max = parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")")));
-        }
-      })
-      inputName = f.name + "(" + (max+1) + ")"
-    }
     if(f){
+      var inputName = f.name;
+      let max = 0;
+      duplicateInputs = map.getLayers().getArray()
+        .filter(layer => layer.get('name')?.substring(0, inputName.length) === inputName);
+      if(duplicateInputs.length > 0){
+        duplicateInputs.forEach(i => {
+          if(parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")"))) > max){
+            max = parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")")));
+          }
+        })
+        inputName = f.name + "(" + (max+1) + ")"
+      }
+      
       var r = new FileReader();
       r.onload = function(e) { 
         var text = e.target.result;
