@@ -11,18 +11,18 @@ function createMap(zoom, center){
   });
 }
 
-function createLayer(features, style){
+function createLayer(name, features, style){
   return new ol.layer.Vector({
     source: new ol.source.Vector({
         features: features
     }),
-    name: 'Data',
+    name: name,
     style: style
   });
 }
 
-function addMinMaxGradient(color1, color2, features, depths){
-  var numberOfItems = (math.max(depths) - math.min(depths));
+function addMinMaxGradient(color1, color2, features, mainFeatures, mainFeature){
+  var numberOfItems = (math.max(mainFeatures) - math.min(mainFeatures));
   var rainbow = new Rainbow(); 
   rainbow.setNumberRange(1, numberOfItems);
   rainbow.setSpectrum(color1, color2);
@@ -32,11 +32,23 @@ function addMinMaxGradient(color1, color2, features, depths){
       gradient.push('#' + hexColour);
   }
   features.forEach(feature => {
-    if(parseInt(feature.properties.depth) === Math.min(...depths)){
-      feature.properties.label = "Min: " + feature.properties.depth;
-    }else if(parseInt(feature.properties.depth) === Math.max(...depths)){
-      feature.properties.label = "Max: " + feature.properties.depth;
+    feature.properties.label = undefined;
+    if(mainFeature === "time"){
+      let time = new Date(feature.properties[mainFeature]);
+      if(time.getTime() === Math.min(...mainFeatures)){
+        feature.properties.label = "Min: " + time;
+      }else if(time.getTime() === Math.max(...mainFeatures)){
+        feature.properties.label = "Max: " + time;
+      }
+      feature.properties.color = gradient[time.getTime() - math.min(mainFeatures) - 1]
     }
-    feature.properties.color = gradient[feature.properties.depth - math.min(depths)];
+    else{
+      if(parseInt(feature.properties[mainFeature]) === Math.min(...mainFeatures)){
+        feature.properties.label = "Min: " + feature.properties[mainFeature];
+      }else if(parseInt(feature.properties[mainFeature]) === Math.max(...mainFeatures)){
+        feature.properties.label = "Max: " + feature.properties[mainFeature];
+      }
+      feature.properties.color = gradient[feature.properties[mainFeature] - math.min(mainFeatures) - 1];
+    }
   });
 }

@@ -18,67 +18,57 @@
   <!-- Load a set of map helper functions-->
   <script type="text/javascript" src="map_fn.js"></script>
 
+  <!-- Load a set of data file helper functions-->
+  <script type="text/javascript" src="file_fn.js"></script>
+
   <!-- Load rainbowvis.js file  -->
   <script src="rainbowvis.js"></script>
-
-  <style>
-    body { margin:0; padding: 0; }
-    #map { position: absolute; top:100; bottom:0; right:0; left:0; }
-  </style>
 </head>
 <body>
-<a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo" style="width:300px;height:50 px;"></a>
-<div>Please select a .geojson file for processing:</div>
-<div>
-  <span><input type="file" id="fileInput" name="geojson_upload" /></span>
-  <span>Feature: </span>
-  <span>
-    <select name="features" id="featureSelect">
-    </select>
-  </span>
-  <span id="min">Min: </span>
-  <span id="max">Max: </span>
-  <span id="mean">Mean: </span>
+<div class=leftColumn>
+  <div class=columnHeader>
+    <a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo" style="width:300px;"></a>
+    <div>Please select a .geojson file for processing:</div>
+    <input type="file" id="fileInput" name="geojson_upload"/>
+    <h2>
+      MASV Echosounder Data:
+    </h2>
+  </div>
+  <div id=dataColumn class=dataColumn></div>
 </div>
-<div>Please select a second .geojson file for processing:</div>
-<div>
-  <span><input type="file" id="fileInput2" name="geojson_upload" /></span>
-  <span>Feature: </span>
-  <span>
-    <select name="features" id="featureSelect2">
-    </select>
-  </span>
-  <span id="min2">Min: </span>
-  <span id="max2">Max: </span>
-  <span id="mean2">Mean: </span>
-</div>
-<div id="map" class="map" style="width: 1000px; height: 600px; margin-top: 80px;"></div>
-<div id="popup" class="ol-popup">
-  <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-  <div id="popup-content"></div>
-</div>
-<h2>
-    MASV echosounder data:
-</h2>
+<div id="map" class="map"></div>
+
 
 <script>
-  document.getElementById('fileInput').addEventListener('change', addInitData);
-  document.getElementById('fileInput2').addEventListener('change', addCompData);
   var map = createMap(2, [0,0]);
-  function addInitData(evt) {
+  var fileInput = document.getElementById('fileInput')
+  fileInput.addEventListener('input', addFile);
+  fileInput.onclick = function (){
+    this.value = null;
+  };
+
+  function addFile(evt) {
     var f = evt.target.files[0]; 
+    var inputName = f.name;
+    let max = 0;
+    duplicateInputs = map.getLayers().getArray()
+      .filter(layer => layer.get('name')?.substring(0, inputName.length) === inputName);
+    if(duplicateInputs.length > 0){
+      duplicateInputs.forEach(i => {
+        if(parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")"))) > max){
+          max = parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")")));
+        }
+      })
+      inputName = f.name + "(" + (max+1) + ")"
+    }
     if(f){
       var r = new FileReader();
       r.onload = function(e) { 
         var text = e.target.result;
-        map.getLayers().forEach(layer => {
-          if (layer !== basemap) {
-            map.removeLayer(layer);
-          }
-        });
         var latTotal = 0;
         var lonTotal = 0;
-        var depths = [];
+        var mainFeatures = [];
+        var mainFeature;
         try{      
           json = JSON.parse(text);
           features = json.features;
@@ -86,40 +76,38 @@
             feature.geometry.coordinates = ol.proj.fromLonLat([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
             latTotal += feature.geometry.coordinates[1];
             lonTotal += feature.geometry.coordinates[0];
-            depths.push(feature.properties.depth);
+            mainFeature = Object.keys(feature.properties)[0];
+            mainFeatures.push(feature.properties[mainFeature]);
           })
         }catch(e){
-          //Handles old format where each line is a feature
-          var allRows = text.split(/\r?\n|\r/);
-          var features = [];
-          allRows.map(row => {
-            try{
-              if(row !== ""){
-                row = JSON.parse(row);
-                row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
-                latTotal += row.geometry.coordinates[1];
-                lonTotal += row.geometry.coordinates[0];
-                depths.push(row.properties.depth);
-                features.push(row);
-              }
-            }catch (e){
-              alert("Failed to load file, must be a .geojson");
-            }
-          })
+          alert("Failed to load file, must be a .geojson");
         }
 
-        var selector = document.getElementById("featureSelect");
-        for(x in features[0].properties){
-          var option = document.createElement("option");
-          option.text = x;
-          selector.add(option);
+        //work around to make a second value for confidence feature array
+        //also stops error when all values are the same 
+        for(i in mainFeatures){
+          if(mainFeatures[i] !== mainFeatures[0]){
+            break;
+          }else if(parseInt(i) === mainFeatures.length-1){
+            mainFeatures.push(mainFeatures[0]-2);
+            alert("All points have the same value for " + mainFeature + "\nMin value being displayed is incorrect");
+          }
+        }
+        //work around to format time feature
+        if(mainFeature === "time"){
+          for(i in mainFeatures){
+            let time = new Date(mainFeatures[i]);
+            mainFeatures[i] = time.getTime();
+          }
         }
 
-        document.getElementById('min').innerHTML= "Min: " + Math.min(...depths);
-        document.getElementById('max').innerHTML= "Max: " + Math.max(...depths);
-        document.getElementById('mean').innerHTML= "Mean: " + depths.reduce((a, b) => parseInt(a) + parseInt(b), 0) / depths.length;
+        addFileRow(inputName, features, mainFeatures);
 
-        addMinMaxGradient('blue', 'orange', features, depths);
+        var file = document.getElementById(inputName);
+        var color = file.childNodes[8].value;
+        var color1 = color.substring(0,color.indexOf(","));
+        var color2 = color.substring(color.indexOf(",")+1);
+        addMinMaxGradient(color1 , color2, features, mainFeatures, mainFeature);
 
         const geojson = {
           'type': 'FeatureCollection',
@@ -131,9 +119,9 @@
 
         function styleFunction (feature) {
           let color = feature.get("color");
-          let text = feature.get("label")
+          let text = feature.get("label");
           if(text !== undefined){
-            color = "yellow"
+            color = "white";
           }
           var point_style = {
             'Point': new ol.style.Style({
@@ -146,104 +134,14 @@
                 offsetY: -10,
                 scale: 1,
                 fill: new ol.style.Fill({
-                    color: 'yellow',
+                    color: 'white',
                 })
               })
             }),  
           };
           return point_style[feature.getGeometry().getType()];
         };
-        var point_layer = createLayer(new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
-        map.addLayer(point_layer);
-      }
-      r.readAsText(f);
-    }
-    else { 
-      alert("Failed to load file");
-    }
-  }
-
-  function addCompData(evt) {
-    var f = evt.target.files[0]; 
-    if(f){
-      var r = new FileReader();
-      r.onload = function(e) { 
-        var text = e.target.result;
-        var latTotal = 0;
-        var lonTotal = 0;
-        var depths = [];
-        try{      
-          json = JSON.parse(text);
-          features = json.features;
-          features.forEach(feature => {
-            feature.geometry.coordinates = ol.proj.fromLonLat([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
-            latTotal += feature.geometry.coordinates[1];
-            lonTotal += feature.geometry.coordinates[0];
-            depths.push(feature.properties.depth);
-          })
-        }catch(e){
-          //Handles old format where each line is a feature
-          var allRows = text.split(/\r?\n|\r/);
-          var features = [];
-          allRows.map(row => {
-            try{
-              if(row !== ""){
-                row = JSON.parse(row);
-                row.geometry.coordinates = ol.proj.fromLonLat([row.geometry.coordinates[1], row.geometry.coordinates[0]]);
-                latTotal += row.geometry.coordinates[1];
-                lonTotal += row.geometry.coordinates[0];
-                depths.push(row.properties.depth);
-                features.push(row);
-              }
-            }catch (e){
-              alert("Failed to load file, must be a .geojson");
-            }
-          })
-        }
-
-        var selector = document.getElementById("featureSelect2");
-        for(x in features[0].properties){
-          var option = document.createElement("option");
-          option.text = x;
-          selector.add(option);
-        }
-
-        document.getElementById('min2').innerHTML= "Min: " + Math.min(...depths);
-        document.getElementById('max2').innerHTML= "Max: " + Math.max(...depths);
-        document.getElementById('mean2').innerHTML= "Mean: " + depths.reduce((a, b) => parseInt(a) + parseInt(b), 0) / depths.length;
-
-        addMinMaxGradient('red', 'green', features, depths);
-
-        const geojson = {
-          'type': 'FeatureCollection',
-          'features': features,
-        };
-
-        function styleFunction (feature) {
-          let color = feature.get("color");
-          let text = feature.get("label");
-          if(text !== undefined){
-            color = "purple"
-          }
-          var point_style = {
-            'Point': new ol.style.Style({
-              image: new ol.style.Circle({
-                radius: 2,
-                fill: new ol.style.Fill({color: color}),
-              }),
-              text: new ol.style.Text({
-                text: text,
-                offsetY: 10,
-                scale: 1,
-                fill: new ol.style.Fill({
-                    color: 'purple',
-                })
-              })
-            }),  
-          };
-          return point_style[feature.getGeometry().getType()];
-        };
-        var point_layer = createLayer(new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
+        var point_layer = createLayer(inputName, new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
         map.addLayer(point_layer);
       }
       r.readAsText(f);
