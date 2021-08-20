@@ -7,9 +7,6 @@ img {
     width: 300px;
 }
 
-/* css for bullet pionts on index.html */
-ol::before{content: "•  "; color: black}
-
 h2 {
     color: black;
     font-size: 120%;
@@ -24,17 +21,19 @@ body{
     flex-direction: row;
 }
 
+/* css for bullet pionts on index.html */
+ol::before{content: "•  "; color: black}
+
+/* styling for left column on masv_echosounder.html*/
 .leftColumn{
     width: 310px; 
     margin: 5px; 
     overflow-y: auto;
 }
-
 .columnHeader{
     position: fixed; 
     background-color: white;
 }
-
 .dataColumn{
     margin-top: 150px;
 }
@@ -72,6 +71,7 @@ body{
     overflow-wrap: break-word;
 }
 
+/* styling for map box */
 .map{
     position: absolute; 
     left: 310px; 
@@ -81,6 +81,7 @@ body{
     margin: 5px;
 }
 
+/* Popup styling */
 .ol-popup{
     background-color: white;
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
