@@ -42,8 +42,9 @@
 <script>
   // var map = createMap(16, ol.proj.fromLonLat([-119.84145, 34.4009]))
   var map = createMap(2, [0,0]);
-  var fileInput = document.getElementById('fileInput')
+  var fileInput = document.getElementById('fileInput');
   fileInput.addEventListener('input', addFile);
+  // This function clears the last recorded file the same file can be input twice
   fileInput.onclick = function (){
     this.value = null;
   };
@@ -51,21 +52,9 @@
   function addFile(evt) {
     var f = evt.target.files[0]; 
     if(f){
-      var inputName = f.name;
-      let max = 0;
-      duplicateInputs = map.getLayers().getArray()
-        .filter(layer => layer.get('name')?.substring(0, inputName.length) === inputName);
-      if(duplicateInputs.length > 0){
-        duplicateInputs.forEach(i => {
-          if(parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")"))) > max){
-            max = parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")")));
-          }
-        })
-        inputName = f.name + "(" + (max+1) + ")"
-      }
-      
       var r = new FileReader();
       r.onload = function(e) { 
+        // Parsing GeoJson and catching if it fails 
         var text = e.target.result;
         var latTotal = 0;
         var lonTotal = 0;
@@ -80,71 +69,90 @@
             lonTotal += feature.geometry.coordinates[0];
             mainFeature = Object.keys(feature.properties)[0];
             mainFeatures.push(feature.properties[mainFeature]);
-          })
+          });
+
+          //work around to make a second value for confidence feature array
+          //also stops error when all values are the same for any feature
+          for(i in mainFeatures){
+            if(mainFeatures[i] !== mainFeatures[0]){
+              break;
+            }else if(parseInt(i) === mainFeatures.length-1){
+              mainFeatures.push(mainFeatures[0]-2);
+              alert("All points have the same value for " + mainFeature + "\nMin value being displayed is incorrect");
+            }
+          }
+          //work around to format time feature
+          if(mainFeature === "time"){
+            for(i in mainFeatures){
+              let time = new Date(mainFeatures[i]);
+              mainFeatures[i] = time.getTime();
+            }
+          }
+
+          // Check for duplicate file names and add suffix appropriately
+          var inputName = f.name;
+          let max = 0;
+          duplicateInputs = map.getLayers().getArray()
+            .filter(layer => layer.get('name')?.substring(0, inputName.length) === inputName);
+          if(duplicateInputs.length > 0){
+            duplicateInputs.forEach(i => {
+              if(parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")"))) > max){
+                max = parseInt(i.get('name')?.substring(inputName.length+1, i.get('name').indexOf(")")));
+              }
+            })
+            inputName = f.name + "(" + (max+1) + ")"
+          }
+
+          // create new row in the left column for this file
+          addFileRow(inputName, features, mainFeatures);
+
+          // create the color gradient for the feature points
+          var file = document.getElementById(inputName);
+          var color = file.childNodes[8].value;
+          var color1 = color.substring(0, color.indexOf(","));
+          var color2 = color.substring(color.indexOf(",")+1);
+          addMinMaxGradient(color1 , color2, features, mainFeatures, mainFeature);
+
+          // Setting the map zoom to see data and map center to average
+          map.getView().setCenter([lonTotal/features.length, latTotal/features.length]);
+          map.getView().setZoom(16);
+
+          // adding point features to a new GeoJson and using that 
+          // to create a layer thats added to the map
+          const geojson = {
+            'type': 'FeatureCollection',
+            'features': features,
+          };
+          // specific styling function that will style each point feature differently
+          function styleFunction (feature) {
+            let color = feature.get("color");
+            let text = feature.get("label");
+            if(text !== undefined){
+              color = "white";
+            }
+            var point_style = {
+              'Point': new ol.style.Style({
+                image: new ol.style.Circle({
+                  radius: 2,
+                  fill: new ol.style.Fill({color: color}),
+                }),
+                text: new ol.style.Text({
+                  text: text,
+                  offsetY: -10,
+                  scale: 1,
+                  fill: new ol.style.Fill({
+                      color: 'white',
+                  })
+                })
+              }),  
+            };
+            return point_style[feature.getGeometry().getType()];
+          };
+          var point_layer = createLayer(inputName, new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
+          map.addLayer(point_layer);
         }catch(e){
           alert("Failed to load file, must be a .geojson");
         }
-
-        //work around to make a second value for confidence feature array
-        //also stops error when all values are the same 
-        for(i in mainFeatures){
-          if(mainFeatures[i] !== mainFeatures[0]){
-            break;
-          }else if(parseInt(i) === mainFeatures.length-1){
-            mainFeatures.push(mainFeatures[0]-2);
-            alert("All points have the same value for " + mainFeature + "\nMin value being displayed is incorrect");
-          }
-        }
-        //work around to format time feature
-        if(mainFeature === "time"){
-          for(i in mainFeatures){
-            let time = new Date(mainFeatures[i]);
-            mainFeatures[i] = time.getTime();
-          }
-        }
-
-        addFileRow(inputName, features, mainFeatures);
-
-        var file = document.getElementById(inputName);
-        var color = file.childNodes[8].value;
-        var color1 = color.substring(0,color.indexOf(","));
-        var color2 = color.substring(color.indexOf(",")+1);
-        addMinMaxGradient(color1 , color2, features, mainFeatures, mainFeature);
-
-        const geojson = {
-          'type': 'FeatureCollection',
-          'features': features,
-        };
-
-        map.getView().setCenter([lonTotal/features.length, latTotal/features.length]);
-        map.getView().setZoom(16);
-
-        function styleFunction (feature) {
-          let color = feature.get("color");
-          let text = feature.get("label");
-          if(text !== undefined){
-            color = "white";
-          }
-          var point_style = {
-            'Point': new ol.style.Style({
-              image: new ol.style.Circle({
-                radius: 2,
-                fill: new ol.style.Fill({color: color}),
-              }),
-              text: new ol.style.Text({
-                text: text,
-                offsetY: -10,
-                scale: 1,
-                fill: new ol.style.Fill({
-                    color: 'white',
-                })
-              })
-            }),  
-          };
-          return point_style[feature.getGeometry().getType()];
-        };
-        var point_layer = createLayer(inputName, new ol.format.GeoJSON().readFeatures(geojson), styleFunction);
-        map.addLayer(point_layer);
       }
       r.readAsText(f);
     }

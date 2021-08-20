@@ -1,11 +1,13 @@
+// basemap defined so we can know which layer not to clear
+const basemap = new ol.layer.Tile({ source: new ol.source.OSM() })
 // const basemap = new ol.layer.Tile({
 //   source: new ol.source.OSM({
 //     url: 'maps/map_3.png'
 //     //url: 'maps/{z}/{x}/{y}.png'
 //   })
 // });
-const basemap = new ol.layer.Tile({ source: new ol.source.OSM() })
 
+// create initial openlayers map at a certain center and zoom
 function createMap(zoom, center){
   return new ol.Map({
     target: 'map',
@@ -17,6 +19,7 @@ function createMap(zoom, center){
   });
 }
 
+// create openlayers layer 
 function createLayer(name, features, style){
   return new ol.layer.Vector({
     source: new ol.source.Vector({
@@ -27,7 +30,10 @@ function createLayer(name, features, style){
   });
 }
 
+// Uses rainbowvis.js to make a two color gradient
+// Also adds the min, max labels, and corresponding colors to the features
 function addMinMaxGradient(color1, color2, features, mainFeatures, mainFeature){
+  // Creating gradient array with a color hex for each integer value in the mainFeatures range
   var numberOfItems = (math.max(mainFeatures) - math.min(mainFeatures));
   var rainbow = new Rainbow(); 
   rainbow.setNumberRange(1, numberOfItems);
@@ -37,6 +43,9 @@ function addMinMaxGradient(color1, color2, features, mainFeatures, mainFeature){
       var hexColour = rainbow.colourAt(i);
       gradient.push('#' + hexColour);
   }
+
+  // Assign the color hex values for each feature accordingly
+  // Assign correct min and max labels for data
   features.forEach(feature => {
     feature.properties.label = undefined;
     if(mainFeature === "time"){

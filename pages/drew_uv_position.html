@@ -19,17 +19,20 @@
   <script type="text/javascript" src="./map_fn.js"></script>
 
   <style>
+    /* page specific styling main styling is under assets/styles.css */
     #map { position: absolute; top:170; left:0; bottom:0; right:0;}
     body {display: block;}
   </style>
 </head>
 <body>
-<a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo"></a>
-<p>Please select a .csv file for processing:</p>
-<input type="file" id="fileInput" name="csv_upload" />
-<h2>
-    DrewUV Position Data:
-</h2>
+<div class=leftColumn>
+  <a href="index.html"><img src="../assets/coast_logo.png" alt="coast_lab logo"></a>
+  <p>Please select a .csv file for processing:</p>
+  <input type="file" id="fileInput" name="csv_upload" />
+  <h2>
+      DrewUV Position Data:
+  </h2>
+</div>
 <div id="map" class="map"></div>
 
 <script>
@@ -44,18 +47,24 @@
           var text = e.target.result;
           const data = await getData(text);
           if(data && data.latitude && data.longitude && data.latitude.length != 0 && data.longitude.length != 0){
+            // Remove all old feature layers except the basemap layer 
             map.getLayers().getArray()
               .filter(layer => layer !== basemap)
               .forEach(layer => map.removeLayer(layer))
+
+            // Setting the map zoom to see data and map center to average of extremes
             let lat = (math.max(data.latitude) + math.min(data.latitude))/2.0;
             let lon = (math.max(data.longitude) + math.min(data.longitude))/2.0;
             map.getView().setCenter(ol.proj.fromLonLat([lon, lat]));
             map.getView().setZoom(18);
 
+            // creating arrays of openlayer features using log data
             points = [];
             lines = [];
             for(var i=0; i<data.latitude.length; i++){
-              //Change the label below to be any feature in the data set
+              // Change the label below to be any feature in the data set
+              // key-value pairings can be added comma seperated after label and 
+              // then they can be refrenced during rendering to display data in various ways
               point = new ol.Feature({label: parseFloat(data.yaw[i]).toFixed(2),
                 geometry: new ol.geom.Point(ol.proj.fromLonLat([data.longitude[i], data.latitude[i]])),
               });
@@ -67,6 +76,7 @@
               }
             }
 
+            // adding line features to a layer and adding that to the map 
             line_style = new ol.style.Style({
                 stroke: new ol.style.Stroke({
                   color: 'orange',
@@ -76,6 +86,7 @@
             var line_layer = createLayer(f.name, lines, line_style);
             map.addLayer(line_layer);
 
+            // adding point features to a layer and adding that to the map 
             var point_style = new ol.style.Style({
                 image: new ol.style.Circle({
                   radius: 3,
@@ -89,6 +100,7 @@
                       })
                 })
             })
+            // specific styling function that will style each point feature differently
             function styleFunction(feature){
               point_style.getText().setText(feature.get('label'));
               return point_style;
@@ -104,6 +116,8 @@
     }
   }
 
+  // this function parses the UV log files
+  // it should be edited if more data fields are added to the logs
   const getData = async (text) => {
     let time=[]
     let ROSEpoch=[]
@@ -114,7 +128,10 @@
     let pitch=[]
     let yaw=[]
 
+    // This regex statement below splits on new line characters 
     var allRows = text.split(/\r?\n|\r/);
+    // Here we split all the comma seperated log values 
+    // If their order chnages then this code must be modified
     allRows.map(row => {
       values = row.split(",")
       if(values[2] != "Latitude" && values[2] != "0"){
